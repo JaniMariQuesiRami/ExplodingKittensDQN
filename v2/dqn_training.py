@@ -527,6 +527,213 @@ if __name__ == "__main__":
     if os.path.exists('output/best_model_checkpoint.pth'):
         print("✅ Mejor modelo checkpoint disponible en output/best_model_checkpoint.pth")
     
+    # ================================
+    # GRÁFICAS COMPARATIVAS ADICIONALES
+    # ================================
+    print("\n" + "="*60)
+    print("📊 GENERANDO GRÁFICAS COMPARATIVAS ADICIONALES")
+    print("="*60)
+    
+    # 1. Comparación Win Rate: Training vs Validation
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    
+    # Training win rate
+    axes[0].plot(ma_wins, label='Training', color='#3498db', linewidth=2)
+    axes[0].axhline(y=0.85, color='green', linestyle='--', alpha=0.5, label='Target 85%')
+    axes[0].axhline(y=max(ma_wins), color='red', linestyle='--', alpha=0.5, label=f'Peak {max(ma_wins):.1%}')
+    axes[0].set_xlabel('Episodio', fontsize=12)
+    axes[0].set_ylabel('Win Rate', fontsize=12)
+    axes[0].set_title('TRAINING - Win Rate Evolution', fontsize=14, fontweight='bold')
+    axes[0].legend()
+    axes[0].grid(True, alpha=0.3)
+    
+    # Validation comparison
+    validation_wr_dqn = win_rate_dqn * 100
+    validation_wr_rand = win_rate_rand * 100
+    
+    bars = axes[1].bar(['DQN Agent', 'Random Agent'], 
+                       [validation_wr_dqn, validation_wr_rand],
+                       color=['#2ecc71', '#e74c3c'], 
+                       alpha=0.8, 
+                       edgecolor='black',
+                       linewidth=2)
+    
+    # Agregar valores encima de las barras
+    for bar, val in zip(bars, [validation_wr_dqn, validation_wr_rand]):
+        height = bar.get_height()
+        axes[1].text(bar.get_x() + bar.get_width()/2., height + 1,
+                    f'{val:.1f}%', ha='center', va='bottom', fontsize=14, fontweight='bold')
+    
+    axes[1].set_ylabel('Win Rate (%)', fontsize=12)
+    axes[1].set_title('VALIDATION - Win Rate Comparison', fontsize=14, fontweight='bold')
+    axes[1].set_ylim(0, 110)
+    axes[1].grid(True, alpha=0.3, axis='y')
+    
+    plt.tight_layout()
+    plt.savefig('output/comparison_training_vs_validation.png', dpi=150, bbox_inches='tight')
+    print("✅ Gráfica guardada: output/comparison_training_vs_validation.png")
+    plt.close()
+    
+    # 2. Análisis de Convergencia: Loss + Win Rate + Epsilon
+    fig, axes = plt.subplots(3, 1, figsize=(12, 10))
+    
+    # Win Rate
+    axes[0].plot(ma_wins, color='#2ecc71', linewidth=2)
+    axes[0].fill_between(range(len(ma_wins)), ma_wins, alpha=0.3, color='#2ecc71')
+    axes[0].axhline(y=0.85, color='orange', linestyle='--', linewidth=2, alpha=0.7, label='Target 85%')
+    axes[0].set_ylabel('Win Rate', fontsize=12, fontweight='bold')
+    axes[0].set_title('CONVERGENCE ANALYSIS', fontsize=14, fontweight='bold')
+    axes[0].legend(fontsize=10)
+    axes[0].grid(True, alpha=0.3)
+    axes[0].set_xlim(0, len(ma_wins))
+    
+    # Reward (si está disponible)
+    axes[1].plot(ma_rewards, color='#3498db', linewidth=2)
+    axes[1].fill_between(range(len(ma_rewards)), ma_rewards, alpha=0.3, color='#3498db')
+    axes[1].set_ylabel('Avg Reward', fontsize=12, fontweight='bold')
+    axes[1].grid(True, alpha=0.3)
+    axes[1].set_xlim(0, len(ma_rewards))
+    
+    # Epsilon decay
+    epsilon_values = [max(0.05, 1.0 - (i / 1000) * 0.95) for i in range(len(ma_wins))]
+    axes[2].plot(epsilon_values, color='#e74c3c', linewidth=2)
+    axes[2].fill_between(range(len(epsilon_values)), epsilon_values, alpha=0.3, color='#e74c3c')
+    axes[2].set_xlabel('Episodio', fontsize=12, fontweight='bold')
+    axes[2].set_ylabel('Epsilon', fontsize=12, fontweight='bold')
+    axes[2].grid(True, alpha=0.3)
+    axes[2].set_xlim(0, len(epsilon_values))
+    
+    plt.tight_layout()
+    plt.savefig('output/convergence_analysis.png', dpi=150, bbox_inches='tight')
+    print("✅ Gráfica guardada: output/convergence_analysis.png")
+    plt.close()
+    
+    # 3. Análisis de Estrategia: Comparación de uso de acciones DQN vs Random
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    
+    # Uso de acciones DQN
+    action_counts_dqn = {i: 0 for i in range(9)}
+    for game in game_logs_dqn:
+        seq = game.get('actions_executed_sequence', game.get('actions_attempted_sequence', ''))
+        if seq:
+            actions = list(map(int, seq.split(',')))
+            for a in actions:
+                action_counts_dqn[a] += 1
+    
+    total_actions_dqn = sum(action_counts_dqn.values())
+    action_names = ["Draw", "Skip", "Attack", "Defuse\nTop", "Defuse\nMid", "Defuse\nBot", "See\nFuture", "Draw\nBottom", "Shuffle"]
+    action_pcts_dqn = [(action_counts_dqn[i] / total_actions_dqn * 100) if total_actions_dqn > 0 else 0 for i in range(9)]
+    
+    # Uso de acciones Random
+    action_counts_rand = {i: 0 for i in range(9)}
+    for game in game_logs_rand:
+        seq = game.get('actions_executed_sequence', game.get('actions_attempted_sequence', ''))
+        if seq:
+            actions = list(map(int, seq.split(',')))
+            for a in actions:
+                action_counts_rand[a] += 1
+    
+    total_actions_rand = sum(action_counts_rand.values())
+    action_pcts_rand = [(action_counts_rand[i] / total_actions_rand * 100) if total_actions_rand > 0 else 0 for i in range(9)]
+    
+    # DQN Agent
+    bars1 = axes[0].bar(action_names, action_pcts_dqn, color='#2ecc71', alpha=0.8, edgecolor='black', linewidth=1.5)
+    axes[0].set_ylabel('% de Uso', fontsize=12, fontweight='bold')
+    axes[0].set_title('DQN Agent - Action Distribution', fontsize=14, fontweight='bold')
+    axes[0].tick_params(axis='x', rotation=45, labelsize=9)
+    axes[0].grid(True, alpha=0.3, axis='y')
+    
+    for bar, pct in zip(bars1, action_pcts_dqn):
+        height = bar.get_height()
+        if height > 1:
+            axes[0].text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                        f'{pct:.1f}%', ha='center', va='bottom', fontsize=9, fontweight='bold')
+    
+    # Random Agent
+    bars2 = axes[1].bar(action_names, action_pcts_rand, color='#e74c3c', alpha=0.8, edgecolor='black', linewidth=1.5)
+    axes[1].set_ylabel('% de Uso', fontsize=12, fontweight='bold')
+    axes[1].set_title('Random Agent - Action Distribution', fontsize=14, fontweight='bold')
+    axes[1].tick_params(axis='x', rotation=45, labelsize=9)
+    axes[1].grid(True, alpha=0.3, axis='y')
+    
+    for bar, pct in zip(bars2, action_pcts_rand):
+        height = bar.get_height()
+        if height > 1:
+            axes[1].text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                        f'{pct:.1f}%', ha='center', va='bottom', fontsize=9, fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig('output/strategy_comparison_dqn_vs_random.png', dpi=150, bbox_inches='tight')
+    print("✅ Gráfica guardada: output/strategy_comparison_dqn_vs_random.png")
+    plt.close()
+    
+    # 4. Comparación de Performance Metrics
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    
+    # Win Rate Comparison
+    axes[0, 0].bar(['DQN', 'Random'], [validation_wr_dqn, validation_wr_rand], 
+                   color=['#2ecc71', '#e74c3c'], alpha=0.8, edgecolor='black', linewidth=2)
+    axes[0, 0].set_ylabel('Win Rate (%)', fontsize=11, fontweight='bold')
+    axes[0, 0].set_title('Win Rate', fontsize=12, fontweight='bold')
+    axes[0, 0].set_ylim(0, 110)
+    axes[0, 0].grid(True, alpha=0.3, axis='y')
+    
+    for i, (label, val) in enumerate([('DQN', validation_wr_dqn), ('Random', validation_wr_rand)]):
+        axes[0, 0].text(i, val + 2, f'{val:.1f}%', ha='center', fontsize=12, fontweight='bold')
+    
+    # Avg Game Length
+    avg_len_dqn = np.mean([g['turns'] for g in game_logs_dqn])
+    avg_len_rand = np.mean([g['turns'] for g in game_logs_rand])
+    
+    axes[0, 1].bar(['DQN', 'Random'], [avg_len_dqn, avg_len_rand], 
+                   color=['#3498db', '#95a5a6'], alpha=0.8, edgecolor='black', linewidth=2)
+    axes[0, 1].set_ylabel('Avg Turns', fontsize=11, fontweight='bold')
+    axes[0, 1].set_title('Average Game Length', fontsize=12, fontweight='bold')
+    axes[0, 1].grid(True, alpha=0.3, axis='y')
+    
+    for i, (label, val) in enumerate([('DQN', avg_len_dqn), ('Random', avg_len_rand)]):
+        axes[0, 1].text(i, val + 0.5, f'{val:.1f}', ha='center', fontsize=12, fontweight='bold')
+    
+    # Avg Reward
+    avg_reward_dqn = np.mean([g['total_reward'] for g in game_logs_dqn])
+    avg_reward_rand = np.mean([g['total_reward'] for g in game_logs_rand])
+    
+    axes[1, 0].bar(['DQN', 'Random'], [avg_reward_dqn, avg_reward_rand], 
+                   color=['#9b59b6', '#34495e'], alpha=0.8, edgecolor='black', linewidth=2)
+    axes[1, 0].set_ylabel('Avg Reward', fontsize=11, fontweight='bold')
+    axes[1, 0].set_title('Average Total Reward', fontsize=12, fontweight='bold')
+    axes[1, 0].grid(True, alpha=0.3, axis='y')
+    
+    for i, (label, val) in enumerate([('DQN', avg_reward_dqn), ('Random', avg_reward_rand)]):
+        axes[1, 0].text(i, val + 0.05, f'{val:.2f}', ha='center', fontsize=12, fontweight='bold')
+    
+    # Games Won Pie Chart
+    wins_count_dqn = sum([g['won'] for g in game_logs_dqn])
+    wins_count_rand = sum([g['won'] for g in game_logs_rand])
+    
+    axes[1, 1].pie([wins_count_dqn, wins_count_rand], 
+                   labels=[f'DQN\n{wins_count_dqn} wins', f'Random\n{wins_count_rand} wins'],
+                   colors=['#2ecc71', '#e74c3c'], 
+                   autopct='%1.1f%%',
+                   startangle=90,
+                   explode=(0.05, 0),
+                   shadow=True,
+                   textprops={'fontsize': 11, 'fontweight': 'bold'})
+    axes[1, 1].set_title('Victory Distribution', fontsize=12, fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig('output/performance_metrics_comparison.png', dpi=150, bbox_inches='tight')
+    print("✅ Gráfica guardada: output/performance_metrics_comparison.png")
+    plt.close()
+    
+    print("\n📊 RESUMEN DE GRÁFICAS GENERADAS:")
+    print("  1. training_curves_v2.png - Curvas de entrenamiento (reward + win rate)")
+    print("  2. validation_analysis_[timestamp].png - Análisis de validación detallado")
+    print("  3. comparison_training_vs_validation.png - Comparación training vs validation")
+    print("  4. convergence_analysis.png - Análisis de convergencia (win rate, reward, epsilon)")
+    print("  5. strategy_comparison_dqn_vs_random.png - Comparación de estrategias")
+    print("  6. performance_metrics_comparison.png - Métricas de performance comparadas")
+    
     print("\n" + "="*60)
     print("🎉 ENTRENAMIENTO Y VALIDACIÓN COMPLETADOS")
     print("="*60)

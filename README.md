@@ -13,14 +13,12 @@ PRFINAL/
 │   └── README.md                # Documentación V1
 │
 ├── v2/                          # Versión Extendida (Mejorada)
-│   ├── exploding_env.py         # Entorno con 8 tipos de cartas + heurística mejorada
-│   ├── dqn_training.py          # Double DQN (3 capas, 256→256→128)
-│   ├── play_pygame.py           # UI completa con nuevas cartas
-│   ├── play_ascii.py            # Modo terminal extendido
-│   └── README.md                # Documentación V2
-│
-├── RESPUESTAS_TEORICAS.md       # Análisis técnico completo
-└── README.md                    # Este archivo
+    ├── exploding_env.py         # Entorno con 8 tipos de cartas + heurística mejorada
+    ├── dqn_training.py          # Double DQN (3 capas, 256→256→128)
+    ├── play_pygame.py           # UI completa con nuevas cartas
+    ├── play_ascii.py            # Modo terminal extendido
+    └── README.md                # Documentación V2
+
 ```
 
 ## 🎯 Versiones
