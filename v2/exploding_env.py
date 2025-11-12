@@ -39,9 +39,9 @@ class ExplodingKittensEnv:
 
         num_skip_deck = max(0, remaining // 10)
         num_attack_deck = max(0, remaining // 10)
-        num_see_future_deck = max(0, remaining // 15)  # ← NUEVO: See the Future
-        num_draw_bottom_deck = max(0, remaining // 15)  # ← NUEVO: Draw from Bottom
-        num_shuffle_deck = max(0, remaining // 20)  # ← NUEVO: Shuffle
+        num_see_future_deck = max(0, remaining // 15) 
+        num_draw_bottom_deck = max(0, remaining // 15)
+        num_shuffle_deck = max(0, remaining // 20)
         num_safe_deck = remaining - num_skip_deck - num_attack_deck - num_see_future_deck - num_draw_bottom_deck - num_shuffle_deck
 
         deck = ['Bomb'] * num_bombs
